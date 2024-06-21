@@ -1,0 +1,51 @@
+import cv2
+import numpy as np
+ 
+def load_character_templates():
+    templates = {}
+    for position in ["units", "tens", "hundreds", "thousands"]:
+        templates[position] = []
+        for i in range(1, 10):
+            img = cv2.imread(f'cistercian_{position}_{i}.png', cv2.IMREAD_GRAYSCALE)
+            templates[position].append(img)
+    return templates
+ 
+def identify_digit(quadrant, templates):
+    min_diff = float('inf')
+    digit = 0
+    for i, template in enumerate(templates):
+        diff = cv2.absdiff(quadrant, template)
+        sum_diff = np.sum(diff)
+        if sum_diff < min_diff:
+            min_diff = sum_diff
+            digit = i + 1
+    return digit
+ 
+def cistercian_to_arabic(cistercian_img):
+    height, width = cistercian_img.shape
+    quadrant_height = height // 2
+    quadrant_width = width // 2
+ 
+    quadrants = {
+        "thousands": cistercian_img[:quadrant_height, :quadrant_width],
+        "hundreds": cistercian_img[:quadrant_height, quadrant_width:],
+        "tens": cistercian_img[quadrant_height:, :quadrant_width],
+        "units": cistercian_img[quadrant_height:, quadrant_width:]
+    }
+ 
+    templates = load_character_templates()
+   
+    arabic_number = 0
+    arabic_number += identify_digit(quadrants["thousands"], templates["thousands"]) * 1000
+    arabic_number += identify_digit(quadrants["hundreds"], templates["hundreds"]) * 100
+    arabic_number += identify_digit(quadrants["tens"], templates["tens"]) * 10
+    arabic_number += identify_digit(quadrants["units"], templates["units"])
+   
+    return arabic_number
+ 
+# Carregar a imagem do número cisterciense a ser identificado
+cistercian_img = cv2.imread('cistercian_number.png', cv2.IMREAD_GRAYSCALE)
+ 
+# Traduzir para número arábico
+arabic_number = cistercian_to_arabic(cistercian_img)
+print(f'O número arábico é: {arabic_number}')
